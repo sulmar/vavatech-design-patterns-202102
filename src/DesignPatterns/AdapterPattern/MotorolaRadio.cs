@@ -2,6 +2,36 @@
 
 namespace AdapterPattern
 {
+    // abstract adapter
+    public interface IRadioAdapter
+    {
+        void Call(byte channel, string message);
+    }
+
+    // concrete adapter
+    public class MotorolaRadioAdapter : IRadioAdapter
+    {
+        // adaptee
+        private MotorolaRadio radio;
+
+        private string pincode;
+
+        public MotorolaRadioAdapter(string pincode)
+        {
+            radio = new MotorolaRadio();
+
+            this.pincode = pincode;
+        }
+
+        public void Call(byte channel, string message)
+        {
+            radio.PowerOn(pincode);
+
+            radio.SelectChannel(channel);
+            radio.Send(message);
+            radio.PowerOff();
+        }
+    }
 
     public class MotorolaRadio
     {
@@ -39,8 +69,5 @@ namespace AdapterPattern
         {
             enabled = false;
         }
-
-
-
     }
 }
