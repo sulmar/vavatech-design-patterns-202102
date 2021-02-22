@@ -16,7 +16,7 @@ namespace BuilderPattern
 
             PhoneTest();
 
-            SalesReportTest();
+            // SalesReportTest();
         }
 
         private static void SalesReportTest()
@@ -24,23 +24,35 @@ namespace BuilderPattern
             FakeOrdersService ordersService = new FakeOrdersService();
             IEnumerable<Order> orders = ordersService.Get();
 
-            SalesReport salesReport = new SalesReport();
+            ISalesReportBuilder salesReportBuilder = new SalesReportBuilder(orders);
 
-            salesReport.Title = "Raport sprzedaży";
-            salesReport.CreateDate = DateTime.Now;
-            salesReport.TotalSalesAmount = orders.Sum(s => s.Amount);
+            salesReportBuilder.AddHeader();
 
-            salesReport.GenderDetails = orders
-                .GroupBy(o => o.Customer.Gender)
-                .Select(g => new GenderReportDetail(
-                            g.Key,
-                            g.Sum(x => x.Details.Sum(d => d.Quantity)),
-                            g.Sum(x => x.Details.Sum(d => d.LineTotal))));
+            if (true)
+                salesReportBuilder.AddSectionByGender();
 
-            salesReport.ProductDetails = orders
-                .SelectMany(o => o.Details)
-                .GroupBy(o => o.Product)
-                .Select(g => new ProductReportDetail(g.Key, g.Sum(p => p.Quantity), g.Sum(p => p.LineTotal)));
+
+            salesReportBuilder.AddSectionByProduct();
+
+            SalesReport salesReport = salesReportBuilder.Build();
+
+
+            //SalesReport salesReport = new SalesReport();
+            //salesReport.Title = "Raport sprzedaży";
+            //salesReport.CreateDate = DateTime.Now;
+            //salesReport.TotalSalesAmount = orders.Sum(s => s.Amount);
+
+            //salesReport.GenderDetails = orders
+            //    .GroupBy(o => o.Customer.Gender)
+            //    .Select(g => new GenderReportDetail(
+            //                g.Key,
+            //                g.Sum(x => x.Details.Sum(d => d.Quantity)),
+            //                g.Sum(x => x.Details.Sum(d => d.LineTotal))));
+
+            //salesReport.ProductDetails = orders
+            //    .SelectMany(o => o.Details)
+            //    .GroupBy(o => o.Product)
+            //    .Select(g => new ProductReportDetail(g.Key, g.Sum(p => p.Quantity), g.Sum(p => p.LineTotal)));
 
             Console.WriteLine(salesReport);
 
@@ -120,7 +132,66 @@ namespace BuilderPattern
         }
     }
 
-  
+    // abstract builder
+    public interface ISalesReportBuilder
+    {
+        void AddHeader();
+        void AddSectionByGender();
+        void AddSectionByProduct();
+        void AddFooter();
+        SalesReport Build();
+    }
+
+    
+    // concrete builder
+    public class SalesReportBuilder : ISalesReportBuilder
+    {
+        private IEnumerable<Order> orders;
+        private SalesReport salesReport;
+
+        public SalesReportBuilder(IEnumerable<Order> orders)
+        {
+            this.orders = orders;
+
+            salesReport = new SalesReport();
+        }
+
+        public void AddFooter()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AddHeader()
+        {
+            salesReport.Title = "Raport sprzedaży";
+            salesReport.CreateDate = DateTime.Now;
+            salesReport.TotalSalesAmount = orders.Sum(s => s.Amount);
+        }
+
+        public void AddSectionByGender()
+        {
+            salesReport.GenderDetails = orders
+               .GroupBy(o => o.Customer.Gender)
+               .Select(g => new GenderReportDetail(
+                           g.Key,
+                           g.Sum(x => x.Details.Sum(d => d.Quantity)),
+                           g.Sum(x => x.Details.Sum(d => d.LineTotal))));
+        }
+
+        public void AddSectionByProduct()
+        {
+            salesReport.ProductDetails = orders
+               .SelectMany(o => o.Details)
+               .GroupBy(o => o.Product)
+               .Select(g => new ProductReportDetail(g.Key, g.Sum(p => p.Quantity), g.Sum(p => p.LineTotal)));
+        }
+
+        public SalesReport Build()
+        {
+            return salesReport;
+        }
+    }
+
     public class SalesReport
     {
         public string Title { get; set; }
