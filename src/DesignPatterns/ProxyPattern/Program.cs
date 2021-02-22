@@ -20,8 +20,10 @@ namespace ProxyPattern
 
         private static void GetProductTest()
         {
-            DbProductRepository productRepository = new DbProductRepository();
-            CacheProductRepository cacheProductRepository = new CacheProductRepository();
+            Console.ResetColor();
+
+            IProductRepository productRepository = new DbProductRepository();
+            IProductRepository cacheProductRepository = new CacheProductRepository(productRepository);
 
             while (true)
             {
@@ -32,19 +34,18 @@ namespace ProxyPattern
                 {
                     Product product = cacheProductRepository.Get(productId);
 
-                    if (product == null)
-                    {
-                        product = productRepository.Get(productId);
-
-                        cacheProductRepository.Add(product);
-                    }
-
                     Console.WriteLine($"{product.Id} {product.Name} {product.UnitPrice:C2}");
                 }
             }
 
 
         }
+
+
+        //private IActionResult Get(int productId)
+        //{
+        //    return Ok(productRepository.Get(productId));
+        //}
 
         private static void SaveProductTest()
         {
@@ -78,12 +79,17 @@ namespace ProxyPattern
     }
 
 
-    public class CacheProductRepository
+    public class CacheProductRepository : IProductRepository
     {
         private ICollection<Product> products;
 
-        public CacheProductRepository()
+        // RealSubject
+        private IProductRepository db;
+
+        public CacheProductRepository(IProductRepository productRepository)
         {
+            this.db = productRepository;
+
             products = new Collection<Product>();
         }
 
@@ -97,6 +103,7 @@ namespace ProxyPattern
 
         public Product Get(int id)
         {
+            // Check
             Product product = products.SingleOrDefault(p => p.Id == id);
 
             if (product != null)
@@ -106,13 +113,44 @@ namespace ProxyPattern
                 Console.ResetColor();
                 return product;
             }
+            else
+            {
+                product = db.Get(id);
+
+                if (product != null)
+                {
+                    products.Add(product);
+                }
+            }
 
             return product;
         }
 
     }
 
-    public class DbProductRepository
+    public interface IProductRepository
+    {
+        Product Get(int id);
+    }
+
+    public interface ICacheProductRepository : IProductRepository
+    {
+
+    }
+
+
+    public class ProductsController
+    {
+        private IProductRepository productRepository;
+
+        public ProductsController(ICacheProductRepository productRepository)
+        {
+            this.productRepository = productRepository;
+        }
+    }
+
+
+    public class DbProductRepository : IProductRepository
     {
         private ICollection<Product> products;
 
@@ -134,6 +172,8 @@ namespace ProxyPattern
             return products.SingleOrDefault(p => p.Id == id);
         }
     }
+
+    // REDIS
 
     public class ProductsDbContext
     {
