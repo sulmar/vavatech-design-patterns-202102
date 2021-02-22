@@ -57,7 +57,9 @@ namespace PrototypePattern
 
             Console.WriteLine(invoice);
 
-            Invoice invoiceCopy = new Invoice("INV 2", DateTime.Now, DateTime.Now, invoice.Customer);
+            // Invoice invoiceCopy = new Invoice("INV 2", DateTime.Now, DateTime.Now, invoice.Customer);
+
+            Invoice invoiceCopy = (Invoice) invoice.Clone();
 
             Console.WriteLine(invoiceCopy);
 
@@ -83,7 +85,7 @@ namespace PrototypePattern
 
     #region Invoice Model
 
-    public class Invoice
+    public class Invoice : ICloneable
     {
         public Invoice(string number, DateTime createDate, DateTime dueDate, Customer customer)
         {
@@ -91,6 +93,8 @@ namespace PrototypePattern
             CreateDate = createDate;
             DueDate = dueDate;
             Customer = customer;
+
+            Details = new List<InvoiceDetail>();
         }
 
         public string Number { get; set; }
@@ -102,13 +106,26 @@ namespace PrototypePattern
 
         public ICollection<InvoiceDetail> Details { get; set; }
 
+        public object Clone()
+        {
+            Invoice invoiceCopy = new Invoice("INV 2", DateTime.Now, DateTime.Now, this.Customer);
+
+            foreach (var invoiceDetail in this.Details)
+            {
+                InvoiceDetail copyInvoiceDetail = (InvoiceDetail) invoiceDetail.Clone();
+                invoiceCopy.Details.Add(copyInvoiceDetail);
+            }
+
+            return invoiceCopy;
+        }
+
         public override string ToString()
         {
             return $"Invoice No {Number} {TotalAmount:C2} {Customer.FullName} paid before {DueDate.ToShortDateString()}";
         }
     }
 
-    public class InvoiceDetail
+    public class InvoiceDetail : ICloneable
     {
         public InvoiceDetail(Product product, int quantity = 1)
         {
@@ -120,6 +137,13 @@ namespace PrototypePattern
         public Product Product { get; set; }
         public int Quantity { get; set; }
         public decimal Amount { get; set; }
+
+        public object Clone()
+        {
+            InvoiceDetail invoiceDetail = new InvoiceDetail(this.Product, this.Quantity);
+
+            return invoiceDetail;
+        }
 
         public override string ToString()
         {
@@ -138,11 +162,17 @@ namespace PrototypePattern
         public string Name { get; set; }
         public decimal UnitPrice { get; set; }
     }
+    public class Address
+    {
+        public string City { get; set; }
+    }
 
-    public class Customer
+    public class Customer : ICloneable
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public bool IsRemoved { get; set; }
+        public Address HomeAddress { get; set; }
 
         public string FullName => $"{FirstName} {LastName}";
 
@@ -150,6 +180,11 @@ namespace PrototypePattern
         {
             FirstName = firstName;
             LastName = lastName;
+        }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 
