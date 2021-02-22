@@ -14,7 +14,9 @@ namespace BuilderPattern
         {
             Console.WriteLine("Hello Builder Pattern!");
 
-            PhoneTest();
+            //PhoneTest();
+
+            FluentPhoneTest();
 
             // SalesReportTest();
         }
@@ -61,10 +63,20 @@ namespace BuilderPattern
         private static void PhoneTest()
         {
             Phone phone = new Phone();
-            phone.Call("555999123", "555000321", ".NET Design Patterns");
+            phone.Call(from: "555999123", to: "555000321", ".NET Design Patterns");
         }
 
-       
+        private static void FluentPhoneTest()
+        {
+            FluentPhone.Pickup()
+                 .From("555999123")
+                 .To("555000999")
+                 .To("555111144")
+                 .WithSubject(".NET Design Pattern")                  
+                 .Call();
+        }
+
+
     }
 
     #region SalesReport
@@ -142,7 +154,7 @@ namespace BuilderPattern
         SalesReport Build();
     }
 
-    
+
     // concrete builder
     public class SalesReportBuilder : ISalesReportBuilder
     {
@@ -336,6 +348,108 @@ namespace BuilderPattern
     }
 
     #endregion
+
+    // FluentPhone phone = FluentPhone.Pickup()
+    //    .From("555999123")
+    //    .To("555000321")
+    //    .WithSubject(".NET Design Pattern")
+    //    .Call();
+
+    public interface IFrom
+    {
+        ITo From(string number);
+    }
+
+    public interface ITo
+    {
+        ICallOrSubject To(string number);
+    }
+
+    public interface ICallOrSubject : ICall, ISubject, ITo
+    {
+
+    }
+
+    public interface ISubject
+    {
+        ICall WithSubject(string subject);
+
+        ICall WithObject(Action action);
+    }
+
+    public interface ICall
+    {
+        void Call();
+    }
+
+    public class FluentPhone : IFrom, ITo, ICall, ICallOrSubject
+    {
+        private string from;
+        private ICollection<string> tos;
+        private string subject;
+
+        private FluentPhone()
+        {
+            tos = new HashSet<string>();
+        }
+
+        public static IFrom Pickup()
+        {
+            return new FluentPhone();
+        }
+
+        public ITo From(string number)
+        {
+            this.from = number;
+
+            return this;
+        }
+
+        public ICallOrSubject To(string number)
+        {
+            this.tos.Add(number);
+
+            return this;
+        }
+
+        public ICall WithSubject(string subject)
+        {
+            this.subject = subject;
+
+            return this;
+        }
+
+        public void Call()
+        {
+            foreach (var to in tos)
+            {
+                if (string.IsNullOrEmpty(subject))
+                {
+                    Call(from, to);
+                }
+                else
+                {
+                    Call(from, to, subject);
+                }
+            }           
+        }
+
+        private void Call(string from, string to, string subject)
+        {
+            Console.WriteLine($"Calling from {from} to {to} with subject {subject}");
+        }
+
+        private void Call(string from, string to)
+        {
+            Console.WriteLine($"Calling from {from} to {to}");
+        }
+
+        public ICall WithObject(Action action)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 
     #region Phone
 
