@@ -23,17 +23,13 @@ namespace FactoryMethodPattern
                 {
                     TimeSpan duration = TimeSpan.FromMinutes(minutes);
 
-                    Visit visit = new Visit(duration, 100);
+                    VisitFactory visitFactory = new VisitFactory();
 
-                    decimal totalAmount = visit.CalculateCost(visitType);
+                    Visit visit = visitFactory.Create(duration, 100, visitType);
 
-                    if (totalAmount == 0)
-                        Console.ForegroundColor = ConsoleColor.Green;
-                    else
-                       if (totalAmount >= 200)
-                        Console.ForegroundColor = ConsoleColor.Red;
-                    else
-                        Console.ForegroundColor = ConsoleColor.White;
+                    decimal totalAmount = visit.CalculateCost();
+
+                    Console.ForegroundColor = ColorFactory.Create(totalAmount);
 
                     Console.WriteLine($"Total amount {totalAmount:C2}");
 
@@ -47,13 +43,69 @@ namespace FactoryMethodPattern
     #region Models
 
 
-    public class Visit
+    public class ColorFactory
+    {
+        public static ConsoleColor Create(decimal totalAmount)
+        {
+            if (totalAmount == 0)
+                return ConsoleColor.Green;
+            else
+                if (totalAmount >= 200)
+                    return ConsoleColor.Red;
+            else
+               return ConsoleColor.White;
+        }
+    }
+
+    public class NFZVisit : Visit
+    {
+        public NFZVisit(TimeSpan duration, decimal pricePerHour) : base(duration, pricePerHour)
+        {
+        }
+
+        public override decimal CalculateCost()
+        {
+            return 0;
+        }
+    }
+
+    public class PrivateVisit : Visit
+    {
+        public PrivateVisit(TimeSpan duration, decimal pricePerHour) : base(duration, pricePerHour)
+        {
+        }
+
+        public override decimal CalculateCost()
+        {
+            return base.CalculateCost();
+        }
+    }
+
+
+    public class CompanyVisitOptions
+    {
+        public decimal DiscountPercentage { get; set; }
+    }
+
+    public class CompanyVisit : Visit
+    {
+        private const decimal companyDiscountPercentage = 0.9m;
+
+        public CompanyVisit(TimeSpan duration, decimal pricePerHour) : base(duration, pricePerHour)
+        {
+        }
+
+        public override decimal CalculateCost()
+        {
+            return base.CalculateCost() * companyDiscountPercentage;
+        }
+    }
+
+    public abstract class Visit
     {
         public DateTime VisitDate { get; set; }
         public TimeSpan Duration { get; set; }
         public decimal PricePerHour { get; set; }
-
-        private const decimal companyDiscountPercentage = 0.9m;
 
         public Visit(TimeSpan duration, decimal pricePerHour)
         {
@@ -62,24 +114,71 @@ namespace FactoryMethodPattern
             PricePerHour = pricePerHour;
         }
 
-        public decimal CalculateCost(string kind)
-        {
-            decimal cost = 0;
+        // public abstract decimal CalculateCost();
 
+        public virtual decimal CalculateCost()
+        {
+            return (decimal)Duration.TotalHours * PricePerHour;
+        }
+
+        //public decimal CalculateCost(string kind)
+        //{
+        //    decimal cost = 0;
+
+        //    if (kind == "N")
+        //    {
+        //        cost = 0;
+        //    }
+        //    else if (kind == "P")
+        //    {
+        //        cost = (decimal)Duration.TotalHours * PricePerHour;
+        //    }
+        //    else if (kind == "F")
+        //    {
+        //        cost = (decimal)Duration.TotalHours * PricePerHour * companyDiscountPercentage;
+        //    }
+
+        //    return cost;
+        //}
+
+
+    }
+
+    public class VisitFactory
+    {
+        public Visit Create(TimeSpan duration, decimal pricePerHour,  string kind)
+        {
             if (kind == "N")
             {
-                cost = 0;
+                return new NFZVisit(duration, pricePerHour);
             }
             else if (kind == "P")
             {
-                cost = (decimal)Duration.TotalHours * PricePerHour;
+                return new PrivateVisit(duration, pricePerHour);
             }
             else if (kind == "F")
             {
-                cost = (decimal)Duration.TotalHours * PricePerHour * companyDiscountPercentage;
+                return new CompanyVisit(duration, pricePerHour);
+            }
+            else if (kind == "T")
+            {
+                return new TeleVisit(duration, pricePerHour);
             }
 
-            return cost;
+            throw new NotSupportedException($"Typ {kind} nie jest obsługiwany");
+        }
+    }
+
+
+    public class TeleVisit : Visit
+    {
+        public TeleVisit(TimeSpan duration, decimal pricePerHour) : base(duration, pricePerHour)
+        {
+        }
+
+        public override decimal CalculateCost()
+        {
+            return 100;
         }
     }
 
