@@ -12,9 +12,63 @@ namespace StrategyPattern
         {
             Console.WriteLine("Hello Strategy Pattern!");
 
-            HappyHoursOrderCalculatorTest();
+            HappyHoursOrderStrategyCalculatorTest();
+
+            SkinColorOrderStrategyCalculatorTest();
+
+           // HappyHoursOrderCalculatorTest();
 
 
+        }
+
+        private static void HappyHoursOrderStrategyCalculatorTest()
+        {
+            Customer customer = new Customer("Anna", "Kowalska", ConsoleColor.Blue);
+
+            Order order = CreateOrder(customer);
+
+            // IDiscountStrategy discountStrategy = new HappyHoursPercentageDiscountStrategy(TimeSpan.Parse("9:00"), TimeSpan.Parse("17:00"), 0.1m);
+
+            IDiscountStrategy discountStrategy = new SkinColorPercentageDiscountStrategy(ConsoleColor.Blue, 0.2m);
+
+            OrderCalculator calculator = new OrderCalculator(discountStrategy);
+            decimal discount = calculator.CalculateDiscount(order);
+
+            Console.WriteLine($"Original amount: {order.Amount:C2} Discount: {discount:C2}");
+        }
+
+        private static void SkinColorOrderStrategyCalculatorTest()
+        {
+            Customer customer = new Customer("Jan", "Nowak", ConsoleColor.Red);
+
+            Order order = CreateOrder(customer);
+
+            // IDiscountStrategy discountStrategy = new HappyHoursPercentageDiscountStrategy(TimeSpan.Parse("9:00"), TimeSpan.Parse("17:00"), 0.1m);
+
+            IDiscountStrategy discountStrategy = new SkinColorFixedDiscountStrategy(ConsoleColor.Red, 10m);
+
+            OrderCalculator calculator = new OrderCalculator(discountStrategy);
+            decimal discount = calculator.CalculateDiscount(order);
+
+            Console.WriteLine($"Original amount: {order.Amount:C2} Discount: {discount:C2}");
+        }
+
+
+        private static void SkinColorOrderStrategyCalculatorTest2()
+        {
+            Customer customer = new Customer("Jan", "Nowak", ConsoleColor.Red);
+
+            Order order = CreateOrder(customer);
+
+            // IDiscountStrategy discountStrategy = new HappyHoursPercentageDiscountStrategy(TimeSpan.Parse("9:00"), TimeSpan.Parse("17:00"), 0.1m);
+
+            ICanDiscountStrategy canDiscountStrategy = new SkinColorDiscountStrategy(ConsoleColor.Red);
+            ICalculateDiscountStrategy calculateDiscount = new PercentageDiscountStrategy(0.1m);
+
+            SecondOrderCalculator calculator = new SecondOrderCalculator(canDiscountStrategy, calculateDiscount);
+            decimal discount = calculator.CalculateDiscount(order);
+
+            Console.WriteLine($"Original amount: {order.Amount:C2} Discount: {discount:C2}");
         }
 
         private static void HappyHoursOrderCalculatorTest()
@@ -28,6 +82,8 @@ namespace StrategyPattern
 
             Console.WriteLine($"Original amount: {order.Amount:C2} Discount: {discount:C2}");
         }
+
+        
 
         private static void GenderOrderCalculatorTest()
         {
@@ -114,10 +170,11 @@ namespace StrategyPattern
 
     public class Customer
     {
-        public Customer(string firstName, string lastName)
+        public Customer(string firstName, string lastName, ConsoleColor skinColor = ConsoleColor.White)
         {
             FirstName = firstName;
             LastName = lastName;
+            SkinColor = skinColor;
 
             if (firstName.EndsWith("a"))
             {
@@ -128,6 +185,7 @@ namespace StrategyPattern
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public Gender Gender { get; set; }
+        public ConsoleColor SkinColor { get; set; }
 
     }
 
