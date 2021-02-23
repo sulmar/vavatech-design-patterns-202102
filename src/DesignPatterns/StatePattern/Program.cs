@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Stateless;
+using System;
+using System.Collections.Generic;
 
 namespace StatePattern
 {
@@ -11,16 +13,20 @@ namespace StatePattern
             // OrderTest();
 
             Lamp lamp = new Lamp();
+
+            Console.WriteLine(lamp.Graph);
+
             Console.WriteLine(lamp.State);
 
-            lamp.PowerOn();
-            Console.WriteLine(lamp.State);
+            while (true)
+            {
+                lamp.Toggle();
+                Console.WriteLine(lamp.State);
 
-            lamp.PowerOff();
-            Console.WriteLine(lamp.State);
+                Console.ReadKey();
+            }
 
-            lamp.PowerOff();
-            Console.WriteLine(lamp.State);
+            
 
 
         }
@@ -105,45 +111,70 @@ namespace StatePattern
         Done
     }
 
+
+    // dotnet add package stateless
+
     public class Lamp
     {
-        public LampState State { get; set; }
+        public LampState State => machine.State;
+
+        private readonly StateMachine<LampState, LampTrigger> machine;
+
+        public string Graph => Stateless.Graph.UmlDotGraph.Format(machine.GetInfo());
+
+        private System.Timers.Timer timer;
+
+        public bool IsWorkingHours => DateTime.Now.Hour < 17;
 
         public Lamp()
         {
-            State = LampState.Off;
+            machine = new StateMachine<LampState, LampTrigger>(LampState.Off);
+
+            machine.Configure(LampState.Off)
+                .Permit(LampTrigger.Toggle, LampState.On);
+
+            machine.Configure(LampState.On)
+                .OnEntry(() => timer.Start())
+                .OnEntry(() => Console.WriteLine("<xml>SET DEVICE ON</xml>"), "Set device on")
+                .Permit(LampTrigger.Toggle, LampState.Blinking)
+                .PermitIf(LampTrigger.Toggle, LampState.Off, () => !IsWorkingHours)
+                .Permit(LampTrigger.ElapsedTime, LampState.Off)
+                .OnExit(() => Console.WriteLine("<xml>SET DEVICE OFF</xml>"), "Set device off")
+                .OnExit(() => timer.Stop());
+
+            machine.Configure(LampState.Blinking)
+                .Permit(LampTrigger.Toggle, LampState.Off);
+
+            machine.OnTransitioned(t => Console.WriteLine($" {t.Trigger} : {t.Source} -> {t.Destination}"));
+
+            timer = new System.Timers.Timer(TimeSpan.FromSeconds(5).TotalMilliseconds);
+            timer.AutoReset = false;
+
+            timer.Elapsed += (s, e) => machine.Fire(LampTrigger.ElapsedTime);
+
         }
 
-        public void PowerOn()
-        {
-            if (State == LampState.Off)
-            {
-                State = LampState.On;
-            }
-            else
-                throw new InvalidOperationException($"state {State}");
+        public void Toggle() => machine.Fire(LampTrigger.Toggle);
 
-        }
-
-        public void PowerOff()
-        {
-            if (State == LampState.On)
-            {
-                State = LampState.Off;
-            }
-            else
-                throw new InvalidOperationException($"state {State}");
-
-        }
+        public bool CanToggle => machine.CanFire(LampTrigger.Toggle);
+        
+        public IEnumerable<LampTrigger> GetPermittedTrigger => machine.GetPermittedTriggers();
 
 
 
     }
 
+    public enum LampTrigger
+    {
+        Toggle,
+        ElapsedTime
+    }
+
     public enum LampState
     {
         On,
-        Off
+        Off,
+        Blinking
     }
 
     #endregion
