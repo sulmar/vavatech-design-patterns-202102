@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -14,7 +15,15 @@ namespace DecoratorPattern
         {
             Console.WriteLine("Hello Decorator Pattern!");
 
-            CalculateOrderDiscountTest();
+            // CalculateOrderDiscountTest();
+
+            AbstractOrder order = new ConcreteOrder { TotalAmount = 100 };
+
+            AbstractOrder orderDecorator1 = new PercentageOrderDecorator(order, 0.1m);
+
+            AbstractOrder orderDecorator2 = new PercentageOrderDecorator(orderDecorator1, 0.05m);
+
+            Console.WriteLine(orderDecorator2.CalculateDiscount());
 
             // FileTest();
         }
@@ -57,11 +66,22 @@ namespace DecoratorPattern
 
             var bytes = File.ReadAllBytes(path);
             using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
-            using (FileStream fs2 = new FileStream(output, FileMode.Create, FileAccess.Write))
-            using (GZipStream zipStream = new GZipStream(fs2, CompressionMode.Compress, false))
+            using (FileStream outputStream = new FileStream(output, FileMode.Create, FileAccess.Write))
+            using (GZipStream zipStream = new GZipStream(outputStream, CompressionMode.Compress, false))
             {
                 zipStream.Write(bytes, 0, bytes.Length);
             }
+        }
+
+        private static void FileTest2()
+        {
+            string path = "lorem-ipsum.txt";
+            string output = $"copy of {path}";
+
+            var bytes = File.ReadAllBytes(path);
+
+            Stream stream = new BufferedStream(new GZipStream(new FileStream(path, FileMode.Open, FileAccess.Read), CompressionLevel.Fastest));
+
         }
     }
 
@@ -133,6 +153,7 @@ namespace DecoratorPattern
             }
         }
 
+        [Required]
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public Gender Gender { get; set; }
