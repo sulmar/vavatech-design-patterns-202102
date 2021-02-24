@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using MediatorPattern.IServices;
 using MediatorPattern.Services;
+using MediatR;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -29,6 +30,9 @@ namespace MediatorPattern
         {
             services.AddSingleton<ICustomerRepository, FakeCustomerRepository>();
             services.AddSingleton<IMessageService, EmailMessageService>();
+
+            // dotnet add package MediatR.Extensions.Microsoft.DependencyInjection
+            services.AddMediatR(typeof(Startup));
 
             services.AddControllers();
         }
