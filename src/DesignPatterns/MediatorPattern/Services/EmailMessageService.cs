@@ -5,6 +5,10 @@ namespace MediatorPattern.Services
 {
     public class EmailMessageService : IMessageService
     {
+        public EmailMessageService()
+        {
+        }
+
         public void Send(string number, string message)
         {
             Console.WriteLine($"Send sms {message} to {number}");

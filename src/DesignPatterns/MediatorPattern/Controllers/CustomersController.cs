@@ -36,7 +36,7 @@ namespace MediatorPattern.Controllers
         [HttpPost]
         public IActionResult Post([FromBody] Customer customer)
         {
-            mediator.Publish(new AddCustomerEvent(customer));
+            mediator.Publish(new AddCustomerEvent(customer));            
 
             return Ok();
         }
@@ -55,7 +55,7 @@ namespace MediatorPattern.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Customer>> Get(int id)
         {
-           Customer customer = await mediator.Send(new GetCustomerRequest(id));
+           Customer customer = await mediator.Send<Customer>(new GetCustomerRequest(id));
 
             //var customers = customerRepository.Get(id);
             return Ok(customer);
