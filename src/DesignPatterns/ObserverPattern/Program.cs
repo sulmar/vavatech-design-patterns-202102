@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Linq;
+using System.Reactive.Linq;
 using System.Threading;
 
 namespace ObserverPattern
@@ -11,10 +14,34 @@ namespace ObserverPattern
         {
             Console.WriteLine("Hello Observer Pattern!");
 
-            Covid19Test();
+            //ObservableTest();
+
+            ReactiveCpuTest();
 
 
-            //   CpuTest();
+            // CpuTest();
+        }
+
+        private static void ObservableTest()
+        {
+
+            // Covid19Test();
+
+            
+
+            ConsoleObserver observer1 = new ConsoleObserver("Marcin");
+            ConsoleObserver observer2 = new ConsoleObserver("Bartek");
+
+            MessagesSource source = new MessagesSource();
+
+            source.Subscribe(observer1);
+
+
+            source.OnNext("Break coffee");
+
+            source.Subscribe(observer2);
+
+            source.OnNext("Lunch");
         }
 
         private static void Covid19Test()
@@ -43,6 +70,44 @@ namespace ObserverPattern
             }
         }
 
+        private static void ReactiveCpuTest()
+        {
+            // dotnet add package System.Reactive
+
+            var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+
+            IObservable<float> source = Observable.Interval(TimeSpan.FromSeconds(1))
+                .Select(_ => cpuCounter.NextValue());
+
+            
+
+
+         //   source.Subscribe(cpu => Console.WriteLine($"{cpu}"));
+
+            IObservable<float> alertCpuSource1 = source.Where(cpu => cpu > 40);
+            IObservable<float> alertCpuSource2 = source.Where(cpu => cpu > 30);
+
+            IObservable<float> alertCpuSource = source
+                // .Merge(alertCpuSource2)
+                .Do( cpu => Console.WriteLine(cpu))
+                .Buffer(TimeSpan.FromSeconds(10))
+                .Select(m => m.Average())               
+                ;
+
+            alertCpuSource.Subscribe(cpu =>
+            {
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.WriteLine($"CPU {cpu} %");
+                Console.ResetColor();
+            });
+
+            Console.WriteLine("Press any key to exit.");
+            Console.ReadKey();
+
+
+
+        }
+
         private static void CpuTest()
         {
             var cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
@@ -58,7 +123,7 @@ namespace ObserverPattern
                     Console.ResetColor();
                 }
                 else
-                if (cpu > 50)
+                if (cpu > 40)
                 {
                     Console.BackgroundColor = ConsoleColor.Red;
                     Console.WriteLine($"CPU {cpu} %");
@@ -73,6 +138,76 @@ namespace ObserverPattern
             }
         }
 
+
+        public class MessagesSource : IObservable<string>, IObserver<string>
+        {
+            private ICollection<IObserver<string>> observers = new Collection<IObserver<string>>();
+
+            public void OnCompleted()
+            {
+                foreach (var observer in observers)
+                {
+                    observer.OnCompleted();
+                }
+            }
+
+            public void OnError(Exception error)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void OnNext(string value)
+            {
+                foreach (IObserver<string> observer in observers)
+                {
+                    observer.OnNext(value);
+                }
+            }
+
+            public IDisposable Subscribe(IObserver<string> observer)
+            {
+                observers.Add(observer);
+
+                observer.OnNext("Welcome!");
+
+                observer.OnNext("Hello World!");
+
+                observer.OnNext("Design Patterns!");
+
+                observer.OnCompleted();
+
+                return null;
+
+            }
+        }
+
+        public class ConsoleObserver : IObserver<string>
+        {
+            public ConsoleObserver(string name)
+            {
+                Name = name;
+            }
+
+            public string Name { get; set; }
+
+            public void OnCompleted()
+            {
+                Console.WriteLine("EOF");
+            }
+
+            public void OnError(Exception error)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void OnNext(string value)
+            {
+                Console.WriteLine($"OnNext: {Name} {value}");
+            }
+        }
+
+
+        #region COVID19
 
         public class Observation
         {
@@ -110,6 +245,8 @@ namespace ObserverPattern
                 yield return new Observation { Country = "Germany", Confirmed = 52, Recovered = 4, Deaths = 1 };
             }
         }
+
+        #endregion
 
 
 
