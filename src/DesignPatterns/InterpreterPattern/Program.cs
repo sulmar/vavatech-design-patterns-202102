@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace InterpreterPattern
 {
@@ -17,7 +18,7 @@ namespace InterpreterPattern
             // (2 + 3) * (1 - 2)
             string expression = "2 3 + 1 2 - *";    // odwrotna notacja polska
 
-            var parser = new Parser();
+            var parser = new Parser(new ExpressionFactory());
 
             int result = parser.Evaluate(expression);
 
@@ -72,26 +73,51 @@ namespace InterpreterPattern
         }
     }
 
+    public interface IExpressionFactory
+    {
+        public IExpression Create(string token);
+    }
+
+    public class ExpressionFactory : IExpressionFactory
+    {
+        public IExpression Create(string token)
+        {
+            switch (token)
+            {
+                case "+":
+                    return new PlusExpression();
+                case "-":
+                    return new MinusExpression();
+                case "*":
+                    return new MultiplyExpression();
+                default:
+                    return new NumberExpression(int.Parse(token));
+            }
+        }
+    }
+
     public class Parser
     {
-        private readonly IList<IExpression> parseTree = new List<IExpression>();
+        private IList<IExpression> parseTree = new List<IExpression>();
+
+        private IExpressionFactory expressionFactory;
+
+        public Parser(IExpressionFactory expressionFactory)
+        {
+            this.expressionFactory = expressionFactory;
+        }
 
         private void Parse(string s)
         {
             var tokens = s.Split(' ');
 
+            //parseTree = tokens
+            //    .Select(token => expressionFactory.Create(token))
+            //    .ToList();
+
             foreach (var token in tokens)
             {
-                if (token == "+")
-                    parseTree.Add(new PlusExpression());
-                else if
-                    (token == "-")
-                    parseTree.Add(new MinusExpression());
-                else if
-                    (token == "*")
-                    parseTree.Add(new MultiplyExpression());
-                else
-                    parseTree.Add(new NumberExpression(int.Parse(token)));
+                parseTree.Add(expressionFactory.Create(token));
             }
         }
 
@@ -105,7 +131,7 @@ namespace InterpreterPattern
             {
                 expression.Interpret(context);
             }
-
+            
             return context.Pop();
 
         }
